@@ -1,10 +1,10 @@
+use crate::repeat::choose_repeat_mode;
+use crate::sounds::choose_sound;
+use crate::utils::prompt_user;
 use chrono::{Local, NaiveTime, Timelike};
-use std::process::{Command, Child};
+use std::process::{Child, Command};
 use std::thread::sleep;
 use std::time::Duration;
-use crate::sounds::choose_sound;
-use crate::repeat::choose_repeat_mode;
-use crate::utils::prompt_user;
 
 pub struct Alarm {
     pub time: NaiveTime,
@@ -15,7 +15,8 @@ pub struct Alarm {
 impl Alarm {
     pub fn set_alarm() -> Self {
         let time_input = prompt_user("Enter alarm time (HH:MM):");
-        let alarm_time = NaiveTime::parse_from_str(&time_input, "%H:%M").expect("Invalid time format!");
+        let alarm_time =
+            NaiveTime::parse_from_str(&time_input, "%H:%M").expect("Invalid time format!");
 
         let selected_sound = choose_sound();
         let repeat_mode = choose_repeat_mode();
@@ -34,12 +35,14 @@ impl Alarm {
             if now.hour() == self.time.hour() && now.minute() == self.time.minute() {
                 self.ring_alarm();
 
-                // Stop if it's a one-time alarm
                 if self.repeat == 1 {
                     break;
                 }
             }
-            sleep(Duration::from_secs(30));
+
+            // Ensure alarm runs immediately if the time is already reached
+            let duration_until_next_minute = 60 - now.second();
+            sleep(Duration::from_secs(duration_until_next_minute as u64));
         }
     }
 
