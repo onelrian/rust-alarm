@@ -3,6 +3,14 @@ name = "run-alarm"
 version = "0.1.0"
 edition = "2021"
 
+[[bin]]
+name = "run-alarm"
+path = "src/main.rs"
+
+[[bin]]
+name = "alarm_process"
+path = "src/alarm_process.rs"
+
 [dependencies]
 chrono = "0.4"        
 notify-rust = "4.8.0" 
