@@ -1,75 +1,26 @@
-use crate::repeat::choose_repeat_mode;
-use crate::sounds::choose_sound;
-use crate::utils::prompt_user;
-use chrono::{Local, NaiveTime, Timelike};
-use std::process::{Child, Command};
-use std::thread::sleep;
-use std::time::Duration;
+use std::process::{Command, Stdio};
+use chrono::NaiveTime;
 
 pub struct Alarm {
-    pub time: NaiveTime,
-    pub sound: String,
-    pub repeat: u32,
+    time: NaiveTime,
+    sound: String,
+    repeat: u32,
 }
 
 impl Alarm {
-    pub fn set_alarm() -> Self {
-        let time_input = prompt_user("Enter alarm time (HH:MM):");
-        let alarm_time =
-            NaiveTime::parse_from_str(&time_input, "%H:%M").expect("Invalid time format!");
-
-        let selected_sound = choose_sound();
-        let repeat_mode = choose_repeat_mode();
-
-        Self {
-            time: alarm_time,
-            sound: selected_sound,
-            repeat: repeat_mode,
-        }
+    pub fn new(time: &str, sound: &str, repeat: u32) -> Self {
+        let time = NaiveTime::parse_from_str(time, "%H:%M").expect("Invalid time format");
+        Self { time, sound: sound.to_string(), repeat }
     }
 
-    pub fn wait_until_alarm(&self) {
-        loop {
-            let now = Local::now().time();
-
-            if now.hour() == self.time.hour() && now.minute() == self.time.minute() {
-                self.ring_alarm();
-
-                if self.repeat == 1 {
-                    break;
-                }
-            }
-
-            // Ensure alarm runs immediately if the time is already reached
-            let duration_until_next_minute = 60 - now.second();
-            sleep(Duration::from_secs(duration_until_next_minute as u64));
-        }
-    }
-
-    fn ring_alarm(&self) {
-        println!("🔔 Alarm ringing! Playing sound...");
-        let mut child: Child = Command::new("aplay")
+    pub fn start_in_background(&self) {
+        Command::new("alarm_process") // Use binary name, not file path
+            .arg(self.time.to_string())
             .arg(&self.sound)
+            .arg(self.repeat.to_string())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
             .spawn()
-            .expect("Failed to play sound");
-
-        loop {
-            let user_input = prompt_user("Press 's' to stop, 'z' to snooze for 5 minutes:");
-            match user_input.as_str() {
-                "s" => {
-                    println!("⏹️ Stopping alarm.");
-                    let _ = child.kill();
-                    break;
-                }
-                "z" => {
-                    println!("😴 Snoozing for 5 minutes...");
-                    let _ = child.kill();
-                    sleep(Duration::from_secs(300));
-                    self.ring_alarm();
-                    break;
-                }
-                _ => println!("⚠️ Invalid input. Try again."),
-            }
-        }
+            .expect("Failed to start alarm in background");
     }
 }
