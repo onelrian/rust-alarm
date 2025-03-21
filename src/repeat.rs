@@ -1,5 +1,5 @@
-use chrono::{Datelike, NaiveDate};
 use crate::utils::prompt_user;
+use chrono::{Datelike, NaiveDate};
 
 pub fn choose_repeat_mode() -> u32 {
     println!("\nRepeat mode:");
@@ -27,10 +27,10 @@ pub fn choose_repeat_mode() -> u32 {
 
 pub fn should_ring_today(repeat_mode: u32, today: &NaiveDate) -> bool {
     match repeat_mode {
-        1 => true, // One-time
-        2 => true, // Daily
-        3 => today.weekday().number_from_monday() == 1, // Weekly (Monday)
-        4 => true, // Custom (To be handled)
+        1 => true,                                     
+        2 => true,                                     
+        3 => today.weekday().number_from_monday() == 1,
+        4 => true,                                      // Custom (To be handled)
         _ => false,
     }
 }
