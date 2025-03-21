@@ -1,5 +1,5 @@
-use std::fs;
 use crate::utils::prompt_user;
+use std::fs;
 
 pub fn choose_sound() -> String {
     let sound_files = match fs::read_dir("sounds") {
@@ -27,5 +27,8 @@ pub fn choose_sound() -> String {
     let choice = prompt_user(&format!("Select a sound (1-{}):", sound_files.len()));
     let index: usize = choice.parse().unwrap_or(1);
 
-    sound_files.get(index - 1).cloned().unwrap_or_else(|| sound_files[0].clone())
+    sound_files
+        .get(index - 1)
+        .cloned()
+        .unwrap_or_else(|| sound_files[0].clone())
 }
