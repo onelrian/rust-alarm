@@ -1,73 +1,47 @@
-use chrono::{Local, Timelike, Duration as ChronoDuration};
-use std::io;
-use std::process::Command;
+use std::io::{self, Write};
+use std::process::{Child, Command};
 use std::thread::sleep;
 use std::time::Duration;
-use crate::repeat::should_ring_today;
 
-pub fn set_alarm(time: &str, sound: &str, repeat_mode: u32) {
-    let parts: Vec<&str> = time.split(':').collect();
-    if parts.len() != 2 {
-        println!("⚠️ Invalid time format! Use HH:MM.");
-        return;
-    }
+pub struct Alarm {
+    pub sound_path: String,
+    pub repeat: bool,
+}
 
-    let (alarm_hour, alarm_minute): (u32, u32) = match (parts[0].parse(), parts[1].parse()) {
-        (Ok(h), Ok(m)) if h < 24 && m < 60 => (h, m),
-        _ => {
-            println!("⚠️ Invalid time input!");
-            return;
-        }
-    };
+impl Alarm {
+    pub fn ring(&self) {
+        println!("🔔 Alarm ringing! Playing sound...");
 
-    loop {
-        let now = Local::now();
-        let mut alarm_time = now
-            .with_hour(alarm_hour)
-            .unwrap()
-            .with_minute(alarm_minute)
-            .unwrap()
-            .with_second(0)
-            .unwrap();
-
-        // ✅ Fix: Convert DateTime<Local> to NaiveDate before passing
-        if !should_ring_today(repeat_mode, &now.date_naive()) {
-            println!("⏭️ Skipping today...");
-            sleep(Duration::from_secs(60));
-            continue;
-        }
-
-        if alarm_time < now {
-            alarm_time = alarm_time + ChronoDuration::days(1);
-        }
-
-        let duration = (alarm_time - now).to_std().unwrap();
-        println!("⏰ Alarm set for {}. Sleeping...", alarm_time.format("%H:%M"));
-        sleep(duration);
+        // Start playing the sound and keep track of the process
+        let mut sound_process: Child = Command::new("aplay")
+            .arg(&self.sound_path)
+            .spawn()
+            .expect("⚠️ Failed to play sound!");
 
         loop {
-            println!("🔔 Alarm ringing! Playing sound...");
-            let _ = Command::new("aplay").arg(sound).spawn();
+            // Give the user control options
+            println!("\nOptions: [s] Snooze | [x] Stop");
+            print!("Enter choice: ");
+            io::stdout().flush().unwrap();
 
-            // Stop or snooze
-            println!("(S) Stop | (Z) Snooze (5 min)");
-            let mut response = String::new();
-            io::stdin().read_line(&mut response).unwrap();
-            match response.trim().to_lowercase().as_str() {
+            let mut choice = String::new();
+            io::stdin().read_line(&mut choice).unwrap();
+            let choice = choice.trim().to_lowercase();
+
+            match choice.as_str() {
                 "s" => {
+                    println!("😴 Snoozing for 5 minutes...");
+                    sound_process.kill().expect("⚠️ Failed to stop sound!");
+                    sleep(Duration::from_secs(300)); // Snooze for 5 minutes
+                    self.ring(); // Restart alarm after snooze
+                }
+                "x" => {
                     println!("✅ Alarm stopped.");
+                    sound_process.kill().expect("⚠️ Failed to stop sound!");
                     break;
                 }
-                "z" => {
-                    println!("⏳ Snoozing for 5 minutes...");
-                    sleep(Duration::from_secs(300)); // Snooze for 5 minutes
-                }
-                _ => println!("⚠️ Invalid option!"),
+                _ => println!("⚠️ Invalid option. Try again."),
             }
-        }
-
-        if repeat_mode == 1 {
-            break;
         }
     }
 }
