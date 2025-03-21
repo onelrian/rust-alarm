@@ -14,8 +14,14 @@ impl Alarm {
     }
 
     pub fn start_in_background(&self) {
-        Command::new("alarm_process") // Use binary name, not file path
-            .arg(self.time.to_string())
+        let executable = std::env::current_exe()
+            .expect("Failed to get current executable path")
+            .parent()
+            .expect("Failed to get executable directory")
+            .join("alarm_process"); // Ensure correct binary path
+    
+        Command::new(executable)
+            .arg(self.time.format("%H:%M").to_string())
             .arg(&self.sound)
             .arg(self.repeat.to_string())
             .stdout(Stdio::null())
@@ -23,4 +29,5 @@ impl Alarm {
             .spawn()
             .expect("Failed to start alarm in background");
     }
+    
 }
