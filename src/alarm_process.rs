@@ -6,9 +6,16 @@ use std::env;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
+    
+    if args.len() < 4 {
+        eprintln!("Usage: {} <HH:MM> <sound_file> <repeat> [reason]", args[0]);
+        return;
+    }
+
     let alarm_time = NaiveTime::parse_from_str(&args[1], "%H:%M").expect("Invalid time format");
     let sound = &args[2];
     let repeat = args[3].parse::<u32>().unwrap();
+    let reason = args.get(4).cloned().unwrap_or_else(|| "No reason provided".to_string());
 
     loop {
         let now = Local::now().time();
@@ -20,10 +27,13 @@ fn main() {
                 .spawn()
                 .expect("Failed to play sound");
 
-            // Send a notification with "Stop" and "Snooze" buttons
+            println!("⏰ Alarm is ringing!");
+            println!("📢 Reason: {}", reason);
+
+            // Properly formatted notify-send command with reason
             let _ = Command::new("notify-send")
-                .arg("Alarm Ringing!")
-                .arg("Click to Stop or Snooze")
+                .arg("⏰ Alarm Ringing!")
+                .arg(format!("📢 Reason: {}\nClick to Stop or Snooze", reason)) // Ensure correct formatting
                 .arg("--action=stop=Stop")
                 .arg("--action=snooze=Snooze")
                 .spawn();

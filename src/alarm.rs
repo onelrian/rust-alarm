@@ -5,12 +5,13 @@ pub struct Alarm {
     time: NaiveTime,
     sound: String,
     repeat: u32,
+    reason : Option<String>
 }
 
 impl Alarm {
-    pub fn new(time: &str, sound: &str, repeat: u32) -> Self {
+    pub fn new(time: &str, sound: &str, repeat: u32 , reason: Option<String>) -> Self {
         let time = NaiveTime::parse_from_str(time, "%H:%M").expect("Invalid time format");
-        Self { time, sound: sound.to_string(), repeat }
+        Self { time, sound: sound.to_string(), repeat , reason }
     }
 
     pub fn start_in_background(&self) {
